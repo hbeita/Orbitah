@@ -1,6 +1,6 @@
 import pytest
-from app.database import Base, get_db
-from app.main import app
+from api.database import Base, get_db
+from api.main import api
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -26,8 +26,8 @@ def client(test_db):
             yield test_db
         finally:
             pass
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
+    api.dependency_overrides[get_db] = override_get_db
+    with TestClient(api) as c:
         yield c
 
 def test_create_achievement(client):

@@ -8,9 +8,9 @@ A modular FastAPI backend for Orbitah, featuring user management, groups, goals,
 
 ```
 orbitah-api/
-  app/
+  api/
     ├── __init__.py
-    ├── main.py                # FastAPI app entrypoint
+    ├── main.py                # FastAPI api entrypoint
     ├── database.py            # SQLAlchemy setup (SQLite by default)
     ├── auth.py                # OAuth2/JWT authentication
     ├── models.py              # SQLAlchemy ORM models
@@ -30,7 +30,7 @@ orbitah-api/
     ├── test_goals.py
     ├── test_groups.py
     ├── test_users.py
-    └── test_minimal_app.py
+    └── test_minimal_api.py
   requirements.txt             # Python dependencies
 ```
 
@@ -50,7 +50,7 @@ pip install -r requirements.txt
 ### 2. Run the API (development)
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn api.main:app --reload
 ```
 
 - The API will be available at: http://127.0.0.1:8000
@@ -59,7 +59,7 @@ uvicorn app.main:app --reload
 ### 3. Run the tests
 
 ```bash
-PYTHONPATH=app pytest tests
+PYTHONPATH=api pytest tests
 ```
 
 ---
