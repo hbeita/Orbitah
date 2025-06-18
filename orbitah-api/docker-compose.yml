@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: orbitah
+      POSTGRES_PASSWORD: orbitahpassword
+      POSTGRES_DB: orbitahdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - SQLALCHEMY_DATABASE_URL=postgresql+psycopg2://orbitah:orbitahpassword@db:5432/orbitahdb
+      - SECRET_KEY=your-secret-key
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
