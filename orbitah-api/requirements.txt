@@ -8,3 +8,5 @@ passlib[bcrypt]
 pydantic
 httpx
 pytest
+python-multipart
+email-validator

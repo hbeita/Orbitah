@@ -9,9 +9,22 @@ services:
       POSTGRES_PASSWORD: orbitahpassword
       POSTGRES_DB: orbitahdb
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+
+  test-db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: orbitah_test
+      POSTGRES_PASSWORD: orbitah_test_password
+      POSTGRES_DB: orbitah_test_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
 
   api:
     build: .
@@ -19,7 +32,7 @@ services:
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       - SQLALCHEMY_DATABASE_URL=postgresql+psycopg2://orbitah:orbitahpassword@db:5432/orbitahdb
       - SECRET_KEY=your-secret-key
@@ -28,3 +41,4 @@ services:
 
 volumes:
   postgres_data:
+  postgres_test_data:

@@ -1,79 +1,85 @@
-import os
-import sys
+import time
 
 import pytest
-from api.database import Base, get_db
-from api.main import api
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../api'))
-from api.database import Base, get_db
-from api.main import api
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_test.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+@pytest.fixture
+def test_user_data():
+    timestamp = int(time.time())
+    return {
+        "username": f"testuser_{timestamp}",
+        "email": f"test_{timestamp}@example.com",
+        "password": "testpassword123"
+    }
 
-@pytest.fixture(scope="module")
-def test_db():
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-    Base.metadata.drop_all(bind=engine)
+@pytest.fixture
+def auth_headers(client, test_user_data):
+    """Create authenticated user and return headers"""
+    # Register user
+    client.post("/auth/register", json=test_user_data)
 
-@pytest.fixture(scope="module")
-def client(test_db):
-    def override_get_db():
-        try:
-            yield test_db
-        finally:
-            pass
-    api.dependency_overrides[get_db] = override_get_db
-    with TestClient(api) as c:
-        yield c
+    # Login to get token
+    login_data = {
+        "email": test_user_data["email"],
+        "password": test_user_data["password"]
+    }
+    response = client.post("/auth/login", json=login_data)
+    token = response.json()["access_token"]
 
-def test_create_group(client):
-    response = client.post("/groups/", json={
+    return {"Authorization": f"Bearer {token}"}
+
+@pytest.fixture
+def test_group_data():
+    return {
         "name": "Test Group",
-        "code": "INV123",
-        "ship_type": "Voyager",
-        "motto": "To the stars!"
-    })
+        "description": "A test group",
+        "is_public": True
+    }
+
+def test_create_group(client, auth_headers, test_group_data):
+    """Test creating a group"""
+    response = client.post("/groups/", json=test_group_data, headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
-    assert data["name"] == "Test Group"
-    assert data["code"] == "INV123"
-    assert "id" in data
+    assert data["name"] == test_group_data["name"]
+    assert data["description"] == test_group_data["description"]
 
-def test_get_group(client):
-    response = client.get("/groups/")
+def test_get_group(client, auth_headers, test_group_data):
+    """Test getting a group"""
+    # Create group first
+    create_response = client.post("/groups/", json=test_group_data, headers=auth_headers)
+    group_id = create_response.json()["id"]
+
+    # Get the group
+    response = client.get(f"/groups/{group_id}", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
-    assert len(data) > 0
-    group_id = data[0]["id"]
-    response = client.get(f"/groups/{group_id}")
-    assert response.status_code == 200
-    group = response.json()
-    assert group["id"] == group_id
+    assert data["id"] == group_id
+    assert data["name"] == test_group_data["name"]
 
-def test_update_group(client):
-    response = client.get("/groups/")
-    group_id = response.json()[0]["id"]
-    response = client.put(f"/groups/{group_id}", json={"name": "Updated Group"})
+def test_update_group(client, auth_headers, test_group_data):
+    """Test updating a group"""
+    # Create group first
+    create_response = client.post("/groups/", json=test_group_data, headers=auth_headers)
+    group_id = create_response.json()["id"]
+
+    # Update the group
+    update_data = {"name": "Updated Group"}
+    response = client.put(f"/groups/{group_id}", json=update_data, headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Updated Group"
 
-def test_delete_group(client):
-    response = client.get("/groups/")
-    group_id = response.json()[0]["id"]
-    response = client.delete(f"/groups/{group_id}")
+def test_delete_group(client, auth_headers, test_group_data):
+    """Test deleting a group"""
+    # Create group first
+    create_response = client.post("/groups/", json=test_group_data, headers=auth_headers)
+    group_id = create_response.json()["id"]
+
+    # Delete the group
+    response = client.delete(f"/groups/{group_id}", headers=auth_headers)
     assert response.status_code == 200
-    response = client.get(f"/groups/{group_id}")
-    assert response.status_code == 404
+
+    # Verify it's deleted
+    get_response = client.get(f"/groups/{group_id}", headers=auth_headers)
+    assert get_response.status_code == 404

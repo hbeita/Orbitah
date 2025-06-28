@@ -38,6 +38,34 @@ class User(UserBase):
     class Config:
         from_attributes = True
 
+class UserResponse(BaseModel):
+    id: str
+    username: str
+    email: EmailStr
+    avatar_url: Optional[str] = None
+    routine_description: Optional[str] = None
+    available_time: Optional[str] = None
+    focus_preference: Optional[str] = None
+    group_id: Optional[str] = None
+    current_location: Optional[str] = None
+    experience_points: Optional[int] = 0
+    rank: Optional[str] = None
+    streak_days: Optional[int] = 0
+    class Config:
+        from_attributes = True
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    expires_in: int
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+
 class GroupBase(BaseModel):
     name: str
     code: str

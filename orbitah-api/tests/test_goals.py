@@ -1,85 +1,84 @@
-import os
-import sys
-from datetime import datetime
-
+import time
 import pytest
-from api.database import Base, get_db
-from api.main import api
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../api'))
-from api.database import Base, get_db
-from api.main import api
+@pytest.fixture
+def test_user_data():
+    timestamp = int(time.time())
+    return {
+        "username": f"testuser_{timestamp}",
+        "email": f"test_{timestamp}@example.com",
+        "password": "testpassword123"
+    }
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_test.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+@pytest.fixture
+def auth_headers(client, test_user_data):
+    """Create authenticated user and return headers"""
+    # Register user
+    client.post("/auth/register", json=test_user_data)
 
-@pytest.fixture(scope="module")
-def test_db():
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-    Base.metadata.drop_all(bind=engine)
+    # Login to get token
+    login_data = {
+        "email": test_user_data["email"],
+        "password": test_user_data["password"]
+    }
+    response = client.post("/auth/login", json=login_data)
+    token = response.json()["access_token"]
 
-@pytest.fixture(scope="module")
-def client(test_db):
-    def override_get_db():
-        try:
-            yield test_db
-        finally:
-            pass
-    api.dependency_overrides[get_db] = override_get_db
-    with TestClient(api) as c:
-        yield c
+    return {"Authorization": f"Bearer {token}"}
 
-def test_create_goal(client):
-    response = client.post("/goals/", json={
+@pytest.fixture
+def test_goal_data():
+    return {
         "title": "Test Goal",
-        "description": "Test description",
-        "type": "daily",
-        "status": "pending",
-        "creator_id": "user-uuid",
-        "category": "work",
-        "created_by_ai": False,
-        "created_at": datetime.utcnow().isoformat(),
-        "due_date": datetime.utcnow().date().isoformat(),
-        "rewards_xp": 10
-    })
+        "description": "A test goal",
+        "target_date": "2024-12-31",
+        "status": "active"
+    }
+
+def test_create_goal(client, auth_headers, test_goal_data):
+    """Test creating a goal"""
+    response = client.post("/goals/", json=test_goal_data, headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
-    assert data["title"] == "Test Goal"
-    assert "id" in data
+    assert data["title"] == test_goal_data["title"]
+    assert data["description"] == test_goal_data["description"]
 
-def test_get_goal(client):
-    response = client.get("/goals/")
+def test_get_goal(client, auth_headers, test_goal_data):
+    """Test getting a goal"""
+    # Create goal first
+    create_response = client.post("/goals/", json=test_goal_data, headers=auth_headers)
+    goal_id = create_response.json()["id"]
+
+    # Get the goal
+    response = client.get(f"/goals/{goal_id}", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
-    assert len(data) > 0
-    goal_id = data[0]["id"]
-    response = client.get(f"/goals/{goal_id}")
-    assert response.status_code == 200
-    goal = response.json()
-    assert goal["id"] == goal_id
+    assert data["id"] == goal_id
+    assert data["title"] == test_goal_data["title"]
 
-def test_update_goal(client):
-    response = client.get("/goals/")
-    goal_id = response.json()[0]["id"]
-    response = client.put(f"/goals/{goal_id}", json={"title": "Updated Goal"})
+def test_update_goal(client, auth_headers, test_goal_data):
+    """Test updating a goal"""
+    # Create goal first
+    create_response = client.post("/goals/", json=test_goal_data, headers=auth_headers)
+    goal_id = create_response.json()["id"]
+
+    # Update the goal
+    update_data = {"title": "Updated Goal"}
+    response = client.put(f"/goals/{goal_id}", json=update_data, headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == "Updated Goal"
 
-def test_delete_goal(client):
-    response = client.get("/goals/")
-    goal_id = response.json()[0]["id"]
-    response = client.delete(f"/goals/{goal_id}")
+def test_delete_goal(client, auth_headers, test_goal_data):
+    """Test deleting a goal"""
+    # Create goal first
+    create_response = client.post("/goals/", json=test_goal_data, headers=auth_headers)
+    goal_id = create_response.json()["id"]
+
+    # Delete the goal
+    response = client.delete(f"/goals/{goal_id}", headers=auth_headers)
     assert response.status_code == 200
-    response = client.get(f"/goals/{goal_id}")
-    assert response.status_code == 404
+
+    # Verify it's deleted
+    get_response = client.get(f"/goals/{goal_id}", headers=auth_headers)
+    assert get_response.status_code == 404

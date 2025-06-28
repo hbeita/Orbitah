@@ -1,69 +1,87 @@
-import os
-import sys
-
+import time
 import pytest
-from api.database import Base, get_db
-from api.main import api
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../api'))
-from api.database import Base, get_db
-from api.main import api
+@pytest.fixture
+def test_user_data():
+    timestamp = int(time.time())
+    return {
+        "username": f"testuser_{timestamp}",
+        "email": f"test_{timestamp}@example.com",
+        "password": "testpassword123"
+    }
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_test.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+@pytest.fixture
+def auth_headers(client, test_user_data):
+    """Create authenticated user and return headers"""
+    # Register user
+    client.post("/auth/register", json=test_user_data)
 
-@pytest.fixture(scope="module")
-def test_db():
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-    Base.metadata.drop_all(bind=engine)
+    # Login to get token
+    login_data = {
+        "email": test_user_data["email"],
+        "password": test_user_data["password"]
+    }
+    response = client.post("/auth/login", json=login_data)
+    token = response.json()["access_token"]
 
-@pytest.fixture(scope="module")
-def client(test_db):
-    def override_get_db():
-        try:
-            yield test_db
-        finally:
-            pass
-    api.dependency_overrides[get_db] = override_get_db
-    with TestClient(api) as c:
-        yield c
+    return {"Authorization": f"Bearer {token}"}
 
-def test_create_exploration_state(client):
-    response = client.post("/exploration/", json={
-        "user_id": "user-uuid",
-        "unlocked_locations": ["Planet Earth"],
-        "current_location": "Planet Earth",
-        "lore_progress": "chapter_1",
-        "achievements": ["first_launch"]
-    })
+@pytest.fixture
+def test_exploration_data():
+    return {
+        "current_level": 1,
+        "experience_points": 100,
+        "discovered_planets": ["Earth", "Mars"],
+        "completed_missions": ["mission1", "mission2"],
+        "current_planet": "Earth"
+    }
+
+def test_create_exploration(client, auth_headers, test_exploration_data):
+    """Test creating an exploration state"""
+    response = client.post("/exploration/", json=test_exploration_data, headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
-    assert data["user_id"] == "user-uuid"
-    assert "Planet Earth" in data["unlocked_locations"]
+    assert data["current_level"] == test_exploration_data["current_level"]
+    assert data["experience_points"] == test_exploration_data["experience_points"]
+    assert data["discovered_planets"] == test_exploration_data["discovered_planets"]
 
-def test_get_exploration_state(client):
-    response = client.get("/exploration/user-uuid")
+def test_get_exploration(client, auth_headers, test_exploration_data):
+    """Test getting an exploration state"""
+    # Create exploration first
+    create_response = client.post("/exploration/", json=test_exploration_data, headers=auth_headers)
+    exploration_id = create_response.json()["id"]
+
+    # Get the exploration
+    response = client.get(f"/exploration/{exploration_id}", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
-    assert data["user_id"] == "user-uuid"
+    assert data["id"] == exploration_id
+    assert data["current_level"] == test_exploration_data["current_level"]
 
-def test_update_exploration_state(client):
-    response = client.put("/exploration/user-uuid", json={"current_location": "Moon Base"})
+def test_update_exploration(client, auth_headers, test_exploration_data):
+    """Test updating an exploration state"""
+    # Create exploration first
+    create_response = client.post("/exploration/", json=test_exploration_data, headers=auth_headers)
+    exploration_id = create_response.json()["id"]
+
+    # Update the exploration
+    update_data = {"current_level": 2, "experience_points": 200}
+    response = client.put(f"/exploration/{exploration_id}", json=update_data, headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
-    assert data["current_location"] == "Moon Base"
+    assert data["current_level"] == 2
+    assert data["experience_points"] == 200
 
-def test_delete_exploration_state(client):
-    response = client.delete("/exploration/user-uuid")
+def test_delete_exploration(client, auth_headers, test_exploration_data):
+    """Test deleting an exploration state"""
+    # Create exploration first
+    create_response = client.post("/exploration/", json=test_exploration_data, headers=auth_headers)
+    exploration_id = create_response.json()["id"]
+
+    # Delete the exploration
+    response = client.delete(f"/exploration/{exploration_id}", headers=auth_headers)
     assert response.status_code == 200
-    response = client.get("/exploration/user-uuid")
-    assert response.status_code == 404
+
+    # Verify it's deleted
+    get_response = client.get(f"/exploration/{exploration_id}", headers=auth_headers)
+    assert get_response.status_code == 404
