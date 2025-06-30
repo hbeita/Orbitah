@@ -76,6 +76,12 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   return (
     <Card className="w-full max-w-md mx-auto bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl">
       <CardHeader className="text-center">
+        <div className="flex items-center justify-center space-x-2 mb-4">
+          <img src="/orbitah-icon.svg" alt="Orbitah Logo" className="w-8 h-8" />
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+            Orbitah
+          </h1>
+        </div>
         <CardTitle className="text-2xl font-bold text-white">
           Create Account
         </CardTitle>
