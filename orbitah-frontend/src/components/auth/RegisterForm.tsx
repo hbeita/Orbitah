@@ -19,7 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { z } from "zod";
 
 const registerSchema = z
   .object({
@@ -42,9 +42,9 @@ interface RegisterFormProps {
 export const RegisterForm: React.FC<RegisterFormProps> = ({
   onSwitchToLogin,
 }) => {
+  const { register } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { register: registerUser } = useAuth();
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -61,24 +61,25 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     setError(null);
 
     try {
-      const { confirmPassword, ...userData } = data;
-      await registerUser(userData);
-    } catch (err: any) {
-      setError(
-        err.response?.data?.detail || "Registration failed. Please try again."
-      );
+      await register({
+        username: data.username,
+        email: data.email,
+        password: data.password,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">
+    <Card className="w-full max-w-md mx-auto bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl font-bold text-white">
           Create Account
         </CardTitle>
-        <CardDescription className="text-center">
+        <CardDescription className="text-white/70">
           Join Orbitah and start your journey
         </CardDescription>
       </CardHeader>
@@ -90,15 +91,16 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Username</FormLabel>
+                  <FormLabel className="text-white/90">Username</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Enter your username"
                       {...field}
                       disabled={isLoading}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-400/50 focus:ring-blue-400/20"
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-400" />
                 </FormItem>
               )}
             />
@@ -108,16 +110,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel className="text-white/90">Email</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
                       placeholder="Enter your email"
                       {...field}
                       disabled={isLoading}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-400/50 focus:ring-blue-400/20"
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-400" />
                 </FormItem>
               )}
             />
@@ -127,16 +130,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel className="text-white/90">Password</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
                       placeholder="Enter your password"
                       {...field}
                       disabled={isLoading}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-400/50 focus:ring-blue-400/20"
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-400" />
                 </FormItem>
               )}
             />
@@ -146,39 +150,46 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
+                  <FormLabel className="text-white/90">
+                    Confirm Password
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="password"
                       placeholder="Confirm your password"
                       {...field}
                       disabled={isLoading}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-400/50 focus:ring-blue-400/20"
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-400" />
                 </FormItem>
               )}
             />
 
             {error && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+              <div className="text-sm text-red-400 bg-red-500/10 p-3 rounded-md border border-red-500/20">
                 {error}
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-500/30 transition-all duration-200"
+              disabled={isLoading}
+            >
               {isLoading ? "Creating account..." : "Create Account"}
             </Button>
           </form>
         </Form>
 
         <div className="mt-4 text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-white/70">
             Already have an account?{" "}
             <button
               type="button"
               onClick={onSwitchToLogin}
-              className="text-blue-600 hover:text-blue-800 font-medium"
+              className="text-green-400 hover:text-green-300 font-medium transition-colors"
             >
               Sign in
             </button>
