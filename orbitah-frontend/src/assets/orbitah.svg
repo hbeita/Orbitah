@@ -1,0 +1,20 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer planet circle -->
+  <ellipse cx="100" cy="100" rx="90" ry="35" transform="rotate(-25 100 100)" stroke="#44055b" stroke-width="3" fill="none"/>
+  <ellipse cx="100" cy="100" rx="95" ry="40" transform="rotate(-25 100 100)" stroke="#700e94" stroke-width="2" fill="none"/>
+  <ellipse cx="100" cy="100" rx="100" ry="40" transform="rotate(-25 100 100)" stroke="#db7efc" stroke-width="1" fill="none"/>
+
+  <!-- Ring (oval) -->
+  <circle cx="100" cy="100" r="60" stroke="#49329c" stroke-width="5" fill="none"/>
+
+  <!-- Centered Hebrew Aleph -->
+  <text x="98" y="135"
+        font-size="140"
+        font-family="'Frank Ruhl Libre', 'Noto Serif Hebrew', 'David', serif"
+        text-anchor="middle"
+        fill="#faad13"
+        letter-spacing="-2"
+        style="font-weight: bold;">
+    א
+  </text>
+</svg>
