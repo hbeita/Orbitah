@@ -23,7 +23,7 @@ if os.getenv("ENVIRONMENT") == "production":
 origins = [
     "http://localhost:5173",  # Frontend dev server
     "http://127.0.0.1:5173",  # Frontend dev server alternative
-    "http://localhost:3000",  # Alternative dev port
+    "http://localhost:3001",  # Alternative dev port
 ]
 
 # Add production origins from environment variable

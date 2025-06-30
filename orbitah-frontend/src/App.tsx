@@ -2,7 +2,9 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import Dashboard from "@/components/dashboard/Dashboard";
 import SpaceBackground from "@/components/SpaceBackground";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import React, { useState } from "react";
 
 const AppContent: React.FC = () => {
@@ -16,6 +18,9 @@ const AppContent: React.FC = () => {
         <div className="relative z-10 text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-400 mx-auto"></div>
           <p className="mt-4 text-white/80">Loading...</p>
+          <div className="mt-6">
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
     );
@@ -48,9 +53,11 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

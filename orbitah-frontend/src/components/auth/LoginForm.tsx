@@ -19,14 +19,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = {
+  email: string;
+  password: string;
+};
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -34,8 +33,14 @@ interface LoginFormProps {
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const { login } = useAuth();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const loginSchema = z.object({
+    email: z.string().email(t("validation.email")),
+    password: z.string().min(6, t("validation.minLength", { min: 6 })),
+  });
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -52,7 +57,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
     try {
       await login(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : t("auth.loginError"));
     } finally {
       setIsLoading(false);
     }
@@ -68,10 +73,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
           </h1>
         </div>
         <CardTitle className="text-2xl font-bold text-white">
-          Welcome Back
+          {t("auth.welcomeBack", "Welcome Back")}
         </CardTitle>
         <CardDescription className="text-white/70">
-          Sign in to your Orbitah account
+          {t("auth.signInToAccount", "Sign in to your Orbitah account")}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -82,11 +87,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-white/90">Email</FormLabel>
+                  <FormLabel className="text-white/90">
+                    {t("auth.email")}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="Enter your email"
+                      placeholder={t("auth.enterEmail", "Enter your email")}
                       {...field}
                       disabled={isLoading}
                       className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-400/50 focus:ring-blue-400/20"
@@ -102,11 +109,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-white/90">Password</FormLabel>
+                  <FormLabel className="text-white/90">
+                    {t("auth.password")}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="Enter your password"
+                      placeholder={t(
+                        "auth.enterPassword",
+                        "Enter your password"
+                      )}
                       {...field}
                       disabled={isLoading}
                       className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-400/50 focus:ring-blue-400/20"
@@ -128,20 +140,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               className="w-full bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 transition-all duration-200"
               disabled={isLoading}
             >
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading
+                ? t("auth.signingIn", "Signing in...")
+                : t("auth.signIn")}
             </Button>
           </form>
         </Form>
 
         <div className="mt-4 text-center">
           <p className="text-sm text-white/70">
-            Don't have an account?{" "}
+            {t("auth.dontHaveAccount")}{" "}
             <button
               type="button"
               onClick={onSwitchToRegister}
               className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
             >
-              Sign up
+              {t("auth.signUp")}
             </button>
           </p>
         </div>
